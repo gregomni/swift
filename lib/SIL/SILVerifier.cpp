@@ -1656,7 +1656,8 @@ public:
   }
   void checkDeallocStackInst(DeallocStackInst *DI) {
     require(isa<SILUndef>(DI->getOperand()) ||
-                isa<AllocStackInst>(DI->getOperand()),
+                isa<AllocStackInst>(DI->getOperand()) ||
+                isa<SILArgument>(DI->getOperand()),
             "Operand of dealloc_stack must be an alloc_stack");
   }
   void checkDeallocRefInst(DeallocRefInst *DI) {
@@ -3293,24 +3294,36 @@ public:
   }
 
   void verifyStackHeight(SILFunction *F) {
-    llvm::DenseMap<SILBasicBlock*, std::vector<SILInstruction*>> visitedBBs;
+    llvm::DenseMap<SILBasicBlock*, std::vector<SmallVector<ValueBase*, 1>>> visitedBBs;
     SmallVector<SILBasicBlock*, 16> Worklist;
     visitedBBs[&*F->begin()] = {};
     Worklist.push_back(&*F->begin());
     while (!Worklist.empty()) {
       SILBasicBlock *BB = Worklist.pop_back_val();
-      std::vector<SILInstruction*> stack = visitedBBs[BB];
+      std::vector<SmallVector<ValueBase*, 1>> stack = visitedBBs[BB];
       for (SILInstruction &i : *BB) {
         CurInstruction = &i;
 
         if (i.isAllocatingStack()) {
-          stack.push_back(&i);
+          SmallVector<ValueBase*,1> newVector;
+          newVector.push_back(&i);
+          stack.push_back(newVector);
         }
         if (i.isDeallocatingStack()) {
           SILValue op = i.getOperand(0);
           require(!stack.empty(),
                   "stack dealloc with empty stack");
-          require(op == stack.back(),
+
+          auto vector = stack.back();
+          bool found = false;
+          for (auto value : vector) {
+            if (op == value) {
+              found = true;
+              break;
+            }
+          }
+          if (!found)
+            require(op == vector[0],
                   "stack dealloc does not match most recent stack alloc");
           stack.pop_back();
         }
@@ -3329,12 +3342,41 @@ public:
               // this successor bb.
               SmallPtrSet<SILBasicBlock *, 16> Visited;
               require(isUnreachableAlongAllPathsStartingAt(SuccBB, Visited) ||
-                          stack == found->second,
+                          stack.size() == found->second.size(),
                       "inconsistent stack heights entering basic block");
               continue;
             }
             Worklist.push_back(SuccBB);
-            visitedBBs.insert({SuccBB, stack});
+
+            if (auto branch = dyn_cast<BranchInst>(&i)) {
+              // Allow for passing stack values as branch arguments.
+              // (This is only used for unconditional branches right now.)
+              std::vector<SmallVector<ValueBase*, 1>> newStack;
+              for (unsigned stackIndex = 0; stackIndex < stack.size(); stackIndex++) {
+                unsigned argIndex = 0;
+                for (; argIndex < branch->getNumArgs(); argIndex++) {
+                  auto argValue = branch->getArg(argIndex);
+                  bool found = false;
+                  auto vector = stack[stackIndex];
+                  for (auto value : vector) {
+                    if (argValue == value) {
+                      auto vector = stack[stackIndex];
+                      vector.push_back(SuccBB->getBBArg(argIndex));
+                      newStack.push_back(vector);
+                      found = true;
+                      break;
+                    }
+                  }
+                  if (found)
+                    break;
+                }
+                if (argIndex == branch->getNumArgs()) {
+                  newStack.push_back(stack[stackIndex]);
+                }
+              }
+              visitedBBs.insert({SuccBB, newStack});
+            } else
+              visitedBBs.insert({SuccBB, stack});
           }
         }
       }
