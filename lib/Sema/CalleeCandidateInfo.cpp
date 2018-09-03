@@ -516,8 +516,9 @@ CalleeCandidateInfo::evaluateCloseness(UncurriedCandidate candidate,
       // If the real argument is unresolved, the candidate isn't a mismatch because
       // the type could be anything, but it's still useful to save the argument number as
       // failureInfo.
-      if (rArgType->hasUnresolvedType() && !mismatchingArgs) {
-        failureInfo.argumentNumber = argNo;
+      if (rArgType->hasTypeVariable() || rArgType->hasUnresolvedType()) {
+        if (!mismatchingArgs)
+          failureInfo.argumentNumber = argNo;
       } else {
         if (archetypesMap.empty())
           mismatchesAreNearMisses &= argumentMismatchIsNearMiss(argType, paramType);

@@ -6448,7 +6448,8 @@ static bool diagnoseKeyPathComponents(ConstraintSystem &CS, KeyPathExpr *KPE,
   // The constraint system may have been unable to resolve the actual root
   // type. The generic interface type of the root produces better
   // diagnostics in this case.
-  if (rootType->hasUnresolvedType() && !KPE->isObjC() && KPE->getRootType()) {
+  if ((rootType->hasUnresolvedType() || rootType->hasArchetype())
+      && !KPE->isObjC() && KPE->getRootType()) {
     if (auto ident = dyn_cast<ComponentIdentTypeRepr>(KPE->getRootType())) {
       if (auto decl = ident->getBoundDecl()) {
         if (auto metaType = decl->getInterfaceType()->castTo<MetatypeType>()) {

@@ -721,8 +721,7 @@ extension Node {
   func getChild(for key:K)->(key: K, value: T) {
     return children.first(where: { (item:KeyedItem) -> Bool in
         return item.key == key
-        // expected-error@-1 {{binary operator '==' cannot be applied to operands of type '_' and 'Self.K'}}
-        // expected-note@-2 {{overloads for '==' exist with these partially matching parameter lists:}}
+        // expected-error@-1 {{ambiguous reference to operator function '=='}}
       })!
   }
 }

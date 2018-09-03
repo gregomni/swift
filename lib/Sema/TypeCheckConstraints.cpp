@@ -2021,7 +2021,8 @@ Type TypeChecker::typeCheckExpression(Expr *&expr, DeclContext *dc,
   // because they will leak out into arbitrary places in the resultant AST.
   if (options.contains(TypeCheckExprFlags::AllowUnresolvedTypeVariables) &&
       (viable.size() != 1 ||
-       (convertType.getType() && convertType.getType()->hasUnresolvedType()))) {
+       (convertType.getType() && (convertType.getType()->hasUnresolvedType()
+                                  || convertType.getType()->hasArchetype())))) {
     return ErrorType::get(Context);
   }
 

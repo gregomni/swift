@@ -625,8 +625,7 @@ struct Radar21692808<Element> {
   init(count: Int, value: Element) {}
 }
 func radar21692808() -> Radar21692808<Int> {
-  return Radar21692808<Int>(count: 1) { // expected-error {{cannot invoke initializer for type 'Radar21692808<Int>' with an argument list of type '(count: Int, () -> Int)'}}
-    // expected-note @-1 {{expected an argument list of type '(count: Int, value: Element)'}}
+  return Radar21692808<Int>(count: 1) { // expected-error {{unable to infer closure type in the current context}}
     return 1
   }
 }
@@ -1205,7 +1204,8 @@ func badTypes() {
 // rdar://34357545
 func unresolvedTypeExistential() -> Bool {
   return (Int.self==_{})
-  // expected-error@-1 {{ambiguous reference to member '=='}}
+  // expected-error@-1 {{binary operator '==' cannot be applied to operands of type 'Int.Type' and '_'}}
+  // expected-note@-2 {{overloads for '==' exist with these partially matching parameter lists}}
 }
 
 func rdar43525641(_ a: Int, _ b: Int = 0, c: Int = 0, _ d: Int) {}
