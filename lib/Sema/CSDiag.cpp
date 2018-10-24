@@ -2458,6 +2458,7 @@ bool FailureDiagnosis::diagnoseContextualConversionError(
   switch (CTP) {
   case CTP_Unused:
   case CTP_CannotFail:
+  case CTP_Preferred:
     llvm_unreachable("These contextual type purposes cannot fail with a "
                      "conversion type specified!");
   case CTP_CalleeResult:

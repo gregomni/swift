@@ -1978,6 +1978,13 @@ Type TypeChecker::typeCheckExpression(Expr *&expr, DeclContext *dc,
     }
   }
 
+  if (convertTypePurpose == CTP_Unused &&
+      options.contains(TypeCheckExprFlags::IsDiscarded)) {
+    convertType = TypeLoc::withoutLoc(
+        cs.getASTContext().getVoidDecl()->getDeclaredInterfaceType());
+    convertTypePurpose = CTP_Preferred;
+  }
+
   // Tell the constraint system what the contextual type is.  This informs
   // diagnostics and is a hint for various performance optimizations.
   cs.setContextualType(expr, convertType, convertTypePurpose);

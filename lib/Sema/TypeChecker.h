@@ -201,6 +201,7 @@ public:
 ///
 enum ContextualTypePurpose {
   CTP_Unused,           ///< No contextual type is specified.
+  CTP_Preferred,        ///< Contextual type preferred but not required.
   CTP_Initialization,   ///< Pattern binding initialization.
   CTP_ReturnStmt,       ///< Value specified to a 'return' statement.
   CTP_YieldByValue,     ///< By-value yield operand.

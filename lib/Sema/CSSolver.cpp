@@ -1165,8 +1165,20 @@ ConstraintSystem::solveImpl(Expr *&expr,
       });
     }
 
-    addConstraint(constraintKind, getType(expr), convertType,
-                  convertTypeLocator, /*isFavored*/ true);
+    if (getContextualTypePurpose() == CTP_Preferred) {
+      SmallVector<Constraint *, 2> constraints;
+
+      constraints.push_back(Constraint::create(*this, constraintKind,
+                                               getType(expr), convertType,
+                                               convertTypeLocator));
+      constraints.push_back(
+          Constraint::create(*this, constraintKind, getType(expr),
+                             getASTContext().TheAnyType, convertTypeLocator));
+      addDisjunctionConstraint(constraints, convertTypeLocator);
+    } else {
+      addConstraint(constraintKind, getType(expr), convertType,
+                    convertTypeLocator, /*isFavored*/ true);
+    }
   }
 
   // Notify the listener that we've built the constraint system.
