@@ -984,19 +984,46 @@ bool MissingExplicitConversionFailure::diagnoseAsError() {
   return true;
 }
 
+SourceLoc MemberAccessOnOptionalBaseFailure::getLoc() const {
+  return getSourceRange().Start;
+}
+
+SourceRange MemberAccessOnOptionalBaseFailure::getSourceRange() const {
+  auto locator = getLocator();
+  if (locator->isForKeyPathComponent()) {
+    auto elem = locator->getLastElementAs<LocatorPathElt::KeyPathComponent>();
+    auto kpExpr = dyn_cast<KeyPathExpr>(getAnchor().get<Expr *>());
+    int baseIndex = elem->getIndex() - 1;
+    auto component = kpExpr->getComponents()[baseIndex];
+    SourceLoc start = component.getLoc();
+    return SourceRange(start, start.getAdvancedLoc(component.getUnresolvedDeclName().getBaseIdentifier().getLength()));
+  } else
+    return FailureDiagnostic::getSourceRange();
+}
+
 bool MemberAccessOnOptionalBaseFailure::diagnoseAsError() {
   auto anchor = getAnchor();
-  auto baseType = getType(anchor);
+  Type baseType;
   bool resultIsOptional = ResultTypeIsOptional;
 
-  // If we've resolved the member overload to one that returns an optional
-  // type, then the result of the expression is optional (and we want to offer
-  // only a '?' fixit) even though the constraint system didn't need to add any
-  // additional optionality.
-  auto overload = getOverloadChoiceIfAvailable(getLocator());
-  if (overload && overload->openedType->getOptionalObjectType())
-    resultIsOptional = true;
-
+  auto locator = getLocator();
+  if (locator->isForKeyPathComponent()) {
+    auto elem = locator->getLastElementAs<LocatorPathElt::KeyPathComponent>();
+    auto kpExpr = dyn_cast<KeyPathExpr>(anchor.get<Expr *>());
+    int baseIndex = elem->getIndex() - 1;
+    auto &cs = getConstraintSystem();
+    baseType = cs.simplifyType(cs.getType(kpExpr, baseIndex))->getRValueType();
+  } else {
+    // If we've resolved the member overload to one that returns an optional
+    // type, then the result of the expression is optional (and we want to offer
+    // only a '?' fixit) even though the constraint system didn't need to add any
+    // additional optionality.
+    baseType = getType(anchor);
+    auto overload = getOverloadChoiceIfAvailable(locator);
+    if (overload && overload->openedType->getOptionalObjectType())
+      resultIsOptional = true;
+  }
+  
   auto unwrappedBaseType = baseType->getOptionalObjectType();
   if (!unwrappedBaseType)
     return false;

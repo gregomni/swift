@@ -488,6 +488,8 @@ public:
       : FailureDiagnostic(solution, locator), Member(memberName),
         ResultTypeIsOptional(resultOptional) {}
 
+  SourceLoc getLoc() const override;
+  SourceRange getSourceRange() const override;
   bool diagnoseAsError() override;
 };
 
