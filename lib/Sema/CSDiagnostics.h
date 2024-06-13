@@ -321,6 +321,17 @@ private:
   getConformanceForConditionalReq(ConstraintLocator *locator);
 };
 
+class MissingSingleElementArrayFailure final : public FailureDiagnostic {
+  Type LHS, RHS;
+public:
+  MissingSingleElementArrayFailure(const Solution &solution, Type lhs, Type rhs,
+                                   ConstraintLocator *locator)
+  : FailureDiagnostic(solution, locator), LHS(lhs), RHS(rhs) {}
+
+  bool diagnoseAsError() override;
+  bool diagnoseAsNote() override;
+};
+
 /// Diagnostics for failed conformance checks originating from
 /// generic requirements e.g.
 /// ```swift

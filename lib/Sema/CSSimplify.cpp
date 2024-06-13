@@ -8078,6 +8078,22 @@ ConstraintSystem::matchTypes(Type type1, Type type2, ConstraintKind kind,
     return getTypeMatchSuccess();
   }
 
+  if (auto placeholder = dyn_cast<PlaceholderType>(type2)) {
+    if (auto *member = dyn_cast<DependentMemberType *>(placeholder->getOriginator())) {
+      if (member->getAssocType()->getProtocol()->isSpecificProtocol(KnownProtocolKind::Sequence) && member->getBase()->isEqual(type1)) {
+        for (auto fix : Fixes) {
+          if (fix->getKind() != FixKind::AddConformance || fix->getAnchor() != locator.getAnchor())
+            continue;
+          auto *loc = getConstraintLocator(locator);
+          if (recordFix(MissingSingleElementArray::create(*this, type1, type2, loc), 0)) {
+            return getTypeMatchFailure(loc);
+          }
+          return getTypeMatchSuccess();
+        }
+      }
+    }
+  }
+
   // Attempt fixes iff it's allowed, both types are concrete and
   // we are not in the middle of attempting one already.
   if (shouldAttemptFixes() && !flags.contains(TMF_ApplyingFix)) {
@@ -15165,6 +15181,9 @@ ConstraintSystem::SolutionKind ConstraintSystem::simplifyFixConstraint(
   case FixKind::IgnoreKeyPathSubscriptIndexMismatch:
   case FixKind::AllowMemberRefOnExistential: {
     return recordFix(fix) ? SolutionKind::Error : SolutionKind::Solved;
+  }
+  case FixKind::WrapSingleElementInArray: {
+    return recordFix(fix, 0) ? SolutionKind::Error : SolutionKind::Solved;
   }
   case FixKind::IgnoreThrownErrorMismatch: {
     return recordFix(fix, 2) ? SolutionKind::Error : SolutionKind::Solved;

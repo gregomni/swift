@@ -86,6 +86,8 @@ enum class FixKind : uint8_t {
   /// Treat rvalue as lvalue
   TreatRValueAsLValue,
 
+  WrapSingleElementInArray,
+
   /// Add a new conformance to the type to satisfy a requirement.
   AddConformance,
 
@@ -710,6 +712,23 @@ public:
   static bool classof(const ConstraintFix *fix) {
     return fix->getKind() == FixKind::AddConformance;
   }
+};
+
+class MissingSingleElementArray final : public RequirementFix {
+  MissingSingleElementArray(ConstraintSystem &cs, Type type, Type protocolType,
+                ConstraintLocator *locator)
+      : RequirementFix(cs, FixKind::WrapSingleElementInArray, type, protocolType,
+                       locator) {}
+public:
+  std::string getName() const override {
+    return "add missing array wrapping single element";
+  }
+
+  bool diagnose(const Solution &solution, bool asNote = false) const override;
+
+  static MissingSingleElementArray *create(ConstraintSystem &cs, Type lhs, Type rhs,
+                               ConstraintLocator *locator);
+
 };
 
 /// Skip same-type generic requirement constraint,

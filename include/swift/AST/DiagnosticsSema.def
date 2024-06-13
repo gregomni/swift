@@ -295,6 +295,10 @@ ERROR(cannot_infer_closure_result_type,none,
 FIXIT(insert_closure_return_type_placeholder,
       "%select{| () }0-> <#Result#> %select{|in }0",
       (bool))
+      
+ERROR(sequence_inferred_for_single_element,none,
+      "a single '%0' element where a sequence of that element needed",
+      (Type))
 
 NOTE(use_of_anon_closure_param,none,
      "anonymous closure parameter %0 is used here", (Identifier))

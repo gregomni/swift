@@ -455,6 +455,18 @@ MissingConformance::forRequirement(ConstraintSystem &cs, Type type,
       cs, /*isContextual=*/false, type, protocolType, locator);
 }
 
+bool MissingSingleElementArray::diagnose(const Solution &solution,
+                                       bool asNote) const {
+  MissingSingleElementArrayFailure failure(solution, LHS, RHS, getLocator());
+  return failure.diagnose(asNote);
+}
+
+MissingSingleElementArray *
+MissingSingleElementArray::create(ConstraintSystem &cs, Type lhs, Type rhs,
+                      ConstraintLocator *locator) {
+  return new (cs.getAllocator()) MissingSingleElementArray(cs, lhs, rhs, locator);
+}
+
 bool SkipSameTypeRequirement::diagnose(const Solution &solution,
                                        bool asNote) const {
   SameTypeRequirementFailure failure(solution, LHS, RHS, getLocator());

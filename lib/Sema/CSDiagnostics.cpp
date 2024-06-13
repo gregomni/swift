@@ -586,6 +586,16 @@ void RequirementFailure::maybeEmitRequirementNote(const Decl *anchor, Type lhs,
                    req.getFirstType(), lhs, req.getSecondType(), rhs);
 }
 
+bool MissingSingleElementArrayFailure::diagnoseAsError() {
+  emitDiagnostic(diag::sequence_inferred_for_single_element, LHS);
+  return true;
+}
+
+bool MissingSingleElementArrayFailure::diagnoseAsNote() {
+  emitDiagnostic(diag::sequence_inferred_for_single_element, LHS);
+  return true;
+}
+
 bool MissingConformanceFailure::diagnoseAsError() {
   auto anchor = getAnchor();
   auto nonConformingType = getLHS();
